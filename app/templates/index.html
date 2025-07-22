@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecom AI Agent</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-shopping-cart"></i>
+                <h1>Ecom AI</h1>
+            </div>
+
+            <div class="chat-suggestions">
+                <div class="suggestion-category">
+                    <div class="category-title">Sales Analytics</div>
+                    <div class="suggestion-item" data-question="What are the top 5 products by sales revenue?">
+                        Top performing products by revenue
+                    </div>
+                    <div class="suggestion-item" data-question="Show me monthly sales trends for the last 6 months">
+                        Monthly sales trends analysis
+                    </div>
+                    <div class="suggestion-item" data-question="Which products have the highest profit margins?">
+                        Products with best profit margins
+                    </div>
+                </div>
+
+                <div class="suggestion-category">
+                    <div class="category-title">Marketing Performance</div>
+                    <div class="suggestion-item" data-question="What are my best performing ad campaigns?">
+                        Top performing ad campaigns
+                    </div>
+                    <div class="suggestion-item" data-question="Show me conversion rates by traffic source">
+                        Conversion rates by source
+                    </div>
+                    <div class="suggestion-item" data-question="Which keywords generate the most revenue?">
+                        High-revenue keywords analysis
+                    </div>
+                </div>
+
+                <div class="suggestion-category">
+                    <div class="category-title">Customer Insights</div>
+                    <div class="suggestion-item" data-question="Who are my most valuable customers?">
+                        Top customer segments
+                    </div>
+                    <div class="suggestion-item" data-question="What's the average customer lifetime value?">
+                        Customer lifetime value metrics
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-chat">
+            <header class="chat-header">
+                <div class="chat-title">Sales & Marketing Assistant</div>
+                <div class="header-actions">
+                    <button class="action-btn" id="clearChatBtn">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                    <button class="action-btn" id="downloadBtn">
+                        <i class="fas fa-download"></i> Download Chart as MD
+                    </button>
+                </div>
+            </header>
+
+            <div class="conversation-area" id="conversationArea">
+                <div class="welcome-message">
+                    <h2 class="welcome-title">How can I help you today?</h2>
+                    <p class="welcome-subtitle">
+                        I can analyze your sales and advertising data to provide insights and create visualizations. 
+                        Ask me anything about your business performance!
+                    </p>
+
+                    <div class="quick-actions">
+                        <div class="quick-action" data-question="Show me today's sales performance">
+                            <i class="fas fa-chart-line"></i>
+                            <h3>Sales Performance</h3>
+                            <p>Get insights on your daily sales metrics</p>
+                        </div>
+                        <div class="quick-action" data-question="Analyze my top products by profit">
+                            <i class="fas fa-crown"></i>
+                            <h3>Top Products</h3>
+                            <p>Find your most profitable products</p>
+                        </div>
+                        <div class="quick-action" data-question="Show me customer acquisition costs">
+                            <i class="fas fa-users"></i>
+                            <h3>Customer Metrics</h3>
+                            <p>Understand your customer acquisition</p>
+                        </div>
+                    </div>
+
+                    <div class="capabilities">
+                        <div class="capability">
+                            <i class="fas fa-database"></i>
+                            SQL Analytics
+                        </div>
+                        <div class="capability">
+                            <i class="fas fa-chart-bar"></i>
+                            Data Visualization
+                        </div>
+                        <div class="capability">
+                            <i class="fas fa-lightbulb"></i>
+                            Business Insights
+                        </div>
+                        <div class="capability">
+                            <i class="fas fa-robot"></i>
+                            AI-Powered
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <form class="input-form" id="questionForm">
+                    <input 
+                        type="text" 
+                        class="input-field" 
+                        id="questionInput" 
+                        placeholder="Ask me about your sales data..." 
+                        autocomplete="off"
+                        required
+                    >
+                    <button type="submit" class="send-btn" id="sendBtn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const form = document.getElementById('questionForm');
+        const input = document.getElementById('questionInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const conversationArea = document.getElementById('conversationArea');
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let lastChartData = null;
+        let lastSqlQuery = '';
+        let lastAnswer = '';
+
+        // Handle suggestion clicks
+        document.querySelectorAll('.suggestion-item, .quick-action').forEach(item => {
+            item.addEventListener('click', () => {
+                const question = item.dataset.question;
+                if (question) {
+                    input.value = question;
+                    form.dispatchEvent(new Event('submit'));
+                }
+            });
+        });
+
+        // Download functionality
+        downloadBtn.addEventListener('click', () => {
+            if (lastChartData || lastSqlQuery || lastAnswer) {
+                downloadMarkdown();
+            } else {
+                alert('No chart or analysis data available to download. Please run an analysis first.');
+            }
+        });
+
+        function downloadMarkdown() {
+            let markdown = '# Sales & Marketing Analysis Report\n\n';
+            markdown += `**Generated on:** ${new Date().toLocaleString()}\n\n`;
+            
+            if (lastAnswer) {
+                markdown += '## Analysis Results\n\n';
+                markdown += lastAnswer + '\n\n';
+            }
+            
+            if (lastSqlQuery) {
+                markdown += '## Generated SQL Query\n\n';
+                markdown += '```sql\n' + lastSqlQuery + '\n```\n\n';
+            }
+            
+            if (lastChartData) {
+                markdown += '## Chart Data\n\n';
+                markdown += 'Chart data was generated and displayed in the interface.\n\n';
+            }
+            
+            markdown += '---\n*Generated by E-commerce AI Assistant*';
+            
+            const blob = new Blob([markdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `analysis-report-${new Date().getTime()}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Clear chat functionality
+        function clearChat() {
+            lastChartData = null;
+            lastSqlQuery = '';
+            lastAnswer = '';
+            
+            conversationArea.innerHTML = `
+                <div class="welcome-message">
+                    <h2 class="welcome-title">How can I help you today?</h2>
+                    <p class="welcome-subtitle">
+                        I can analyze your sales and advertising data to provide insights and create visualizations. 
+                        Ask me anything about your business performance!
+                    </p>
+                    <div class="quick-actions">
+                        <div class="quick-action" data-question="Show me today's sales performance">
+                            <i class="fas fa-chart-line"></i>
+                            <h3>Sales Performance</h3>
+                            <p>Get insights on your daily sales metrics</p>
+                        </div>
+                        <div class="quick-action" data-question="Analyze my top products by profit">
+                            <i class="fas fa-crown"></i>
+                            <h3>Top Products</h3>
+                            <p>Find your most profitable products</p>
+                        </div>
+                        <div class="quick-action" data-question="Show me customer acquisition costs">
+                            <i class="fas fa-users"></i>
+                            <h3>Customer Metrics</h3>
+                            <p>Understand your customer acquisition</p>
+                        </div>
+                    </div>
+                    <div class="capabilities">
+                        <div class="capability"><i class="fas fa-database"></i>
+                            SQL Analytics
+                        </div>
+                        <div class="capability">
+                            <i class="fas fa-chart-bar"></i>
+                            Data Visualization
+                        </div>
+                        <div class="capability">
+                            <i class="fas fa-lightbulb"></i>
+                            Business Insights
+                        </div>
+                        <div class="capability">
+                            <i class="fas fa-robot"></i>
+                            AI-Powered
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Re-attach event listeners to new quick actions
+            document.querySelectorAll('.quick-action').forEach(item => {
+                item.addEventListener('click', () => {
+                    const question = item.dataset.question;
+                    if (question) {
+                        input.value = question;
+                        form.dispatchEvent(new Event('submit'));
+                    }
+                });
+            });
+        }
+
+        clearChatBtn.addEventListener('click', clearChat);
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const question = input.value.trim();
+            if (!question) return;
+
+            // Hide welcome message
+            const welcomeMessage = document.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.style.display = 'none';
+            }
+
+            // Add user message
+            appendMessage(question, 'user');
+            form.reset();
+            sendBtn.disabled = true;
+
+            // Add AI thinking message
+            const aiMessageDiv = appendMessage('', 'ai', true);
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'thinking';
+            thinkingDiv.innerHTML = '<i class="fas fa-brain"></i> Analyzing your data...';
+            aiMessageDiv.appendChild(thinkingDiv);
+            scrollToBottom();
+
+            try {
+                // Connect to backend
+                const eventSource = new EventSource(`/api/ask?question=${encodeURIComponent(question)}`);
+                let sqlQuery = '';
+                let finalAnswer = '';
+                let chartData = null;
+
+                eventSource.addEventListener('message', event => {
+                    const data = JSON.parse(event.data);
+                    if (data.log) {
+                        const logMessage = data.log.replace(/`([^`]+)`/g, (match, p1) => {
+                            if (p1.toLowerCase().startsWith('select')) {
+                                sqlQuery = p1;
+                            }
+                            return '';
+                        });
+
+                        if (logMessage.trim()) {
+                            thinkingDiv.innerHTML = `<i class="fas fa-cog fa-spin"></i> ${logMessage}`;
+                        }
+                    }
+                });
+
+                eventSource.addEventListener('final_response', event => {
+                    const data = JSON.parse(event.data);
+                    finalAnswer = data.answer;
+                    chartData = data.chart_data;
+
+                    // Store for download functionality
+                    lastSqlQuery = sqlQuery;
+                    lastAnswer = finalAnswer;
+                    lastChartData = chartData;
+
+                    renderAIMessage(aiMessageDiv, sqlQuery, finalAnswer, chartData);
+                    sendBtn.disabled = false;
+                    input.focus();
+                    scrollToBottom();
+                    eventSource.close();
+                });
+
+                eventSource.onerror = () => {
+                    aiMessageDiv.innerHTML = `
+                        <div style="color: #ef4444; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Error: Could not connect to the agent.
+                        </div>
+                    `;
+                    sendBtn.disabled = false;
+                    eventSource.close();
+                };
+
+            } catch (error) {
+                aiMessageDiv.innerHTML = `
+                    <div style="color: #ef4444; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Connection error. Please try again.
+                    </div>
+                `;
+                sendBtn.disabled = false;
+            }
+        });
+
+        function appendMessage(text, type, returnContainer = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = `avatar ${type}-avatar`;
+            avatar.innerHTML = type === 'ai' ? '<i class="fas fa-robot"></i>' : '<i class="fas fa-user"></i>';
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            
+            if (!returnContainer) {
+                content.textContent = text;
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            conversationArea.appendChild(messageDiv);
+            scrollToBottom();
+            
+            return returnContainer ? content : messageDiv;
+        }
+
+        function renderAIMessage(container, sql, answer, chartData) {
+            container.innerHTML = '';
+
+            // Add the answer
+            const answerDiv = document.createElement('div');
+            answerDiv.style.whiteSpace = 'pre-wrap';
+            answerDiv.textContent = answer;
+            container.appendChild(answerDiv);
+
+            // Add SQL section
+            if (sql) {
+                const sqlSection = document.createElement('div');
+                sqlSection.className = 'sql-section';
+                
+                const sqlHeader = document.createElement('div');
+                sqlHeader.className = 'sql-header';
+                sqlHeader.innerHTML = `
+                    <div class="sql-title">
+                        <i class="fas fa-code"></i>
+                        Generated SQL Query
+                    </div>
+                `;
+                
+                const sqlCode = document.createElement('div');
+                sqlCode.className = 'sql-code';
+                sqlCode.textContent = sql;
+                
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy SQL';
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(sql);
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy SQL';
+                    }, 2000);
+                };
+                
+                sqlSection.appendChild(sqlHeader);
+                sqlSection.appendChild(sqlCode);
+                sqlSection.appendChild(copyBtn);
+                container.appendChild(sqlSection);
+            }
+
+            // Add chart using Plotly
+            if (chartData) {
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'chart-container';
+                chartContainer.innerHTML = '<div id="plotly-chart-' + Date.now() + '" style="width: 100%; height: 400px;"></div>';
+                container.appendChild(chartContainer);
+
+                // Render Plotly chart
+                const chartDiv = chartContainer.querySelector('[id^="plotly-chart-"]');
+                try {
+                    const plotlyData = JSON.parse(chartData);
+                    
+                    // Apply dark theme config
+                    const config = {
+                        displayModeBar: false,
+                        responsive: true
+                    };
+                    
+                    const layout = {
+                        ...plotlyData.layout,
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)',
+                        font: { color: '#ffffff' },
+                        xaxis: { ...plotlyData.layout.xaxis, color: '#ffffff', gridcolor: 'rgba(255,255,255,0.1)' },
+                        yaxis: { ...plotlyData.layout.yaxis, color: '#ffffff', gridcolor: 'rgba(255,255,255,0.1)' }
+                    };
+                    
+                    Plotly.newPlot(chartDiv, plotlyData.data, layout, config);
+                } catch (error) {
+                    console.error('Plotly rendering error:', error);
+                    chartDiv.innerHTML = '<div style="color: #ef4444; text-align: center; padding: 20px;"><i class="fas fa-chart-bar"></i> Error rendering chart</div>';
+                }
+            }
+        }
+
+        function scrollToBottom() {
+            conversationArea.scrollTop = conversationArea.scrollHeight;
+        }
+
+        // Focus input on page load
+        window.addEventListener('load', () => {
+            input.focus();
+        });
+    </script>
+</body>
+</html>
