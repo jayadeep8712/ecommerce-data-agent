@@ -1,6 +1,6 @@
 # E-commerce AI Data Agent
 
-![E-commerce AI Agent Screenshot](./assets/agentui.png)
+![E-commerce AI Agent Screenshot](./assets/demo.png)
 
 This project is a sophisticated AI-powered agent designed to answer natural language questions about e-commerce data. It features a modern, interactive web interface where users can ask questions, view data, and see visualizations in real-time.
 
@@ -100,7 +100,3 @@ You can try asking the agent questions like:
 -   "Which 5 products had the highest CPC?"
 -   "Show me total ad sales by date"
 -   "What are the top 5 products by ad spend?"
-
----
-
-_This project was built as a demonstration of building modern, agentic AI systems._
